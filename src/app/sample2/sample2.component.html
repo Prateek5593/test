@@ -1,0 +1,10 @@
+
+<form novalidate #f="ngForm">
+  <input type="text"
+    class="form-control"
+    name="lastName"
+    [(ngModel)]="model.lastName"
+    required
+    #lastName="ngModel"
+    placeholder="hh:mm:ss" appPhoneMask appMask="hh:mm:ss" appSpecialCharecter= "[':']">
+</form>
