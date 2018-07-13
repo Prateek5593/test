@@ -4,12 +4,18 @@ import { NgControl } from '@angular/forms';
 import { distinctUntilChanged } from 'rxjs/operators';
 
 @Directive({
-    selector: '[appPhoneMask]'
+    selector: '[appTimeMask]'
 })
-export class PhoneMaskDirective implements OnInit {
+export class TimeMaskDirective implements OnInit {
     @Input() appMask: string;
-    @Input() appSpecialCharecter: string[];
-    control: any;
+    @Input() separator: string;
+    control: NgControl;
+
+    timeRange = {
+        hh: 23,
+        mm: 59,
+        ss: 59
+    };
     constructor(private injector: Injector) {
         this.control = this.injector.get(NgControl);
     }
@@ -18,7 +24,9 @@ export class PhoneMaskDirective implements OnInit {
             .pipe(distinctUntilChanged())
             .subscribe(val => {
                 if (val) {
-                    this._setVal(this._timeMask(val, this.appMask, this.appSpecialCharecter));
+                    const result = this._timeMask(val, this.appMask, this.separator);
+                    this.validate(result, this.separator);
+                    this._setVal(result);
                 }
             });
     }
@@ -28,7 +36,7 @@ export class PhoneMaskDirective implements OnInit {
         }
     }
 
-    private _timeMask(val: string, pattern: string, separators?: string[]): string {
+    private _timeMask(val: string, pattern: string, separator?: string): string {
         const resultArr: any = [];
         const patternArr: any = pattern.split('');
         const inputArr: any = val.split('').filter(elem => {
@@ -36,7 +44,7 @@ export class PhoneMaskDirective implements OnInit {
         });
 
         for (let i = 0; i < patternArr.length; i++) {
-            if (separators && separators.indexOf(patternArr[i]) < 0) {
+            if (separator && separator.indexOf(patternArr[i]) < 0) {
                 resultArr[i] = 0;
             } else {
                 resultArr[i] = patternArr[i];
@@ -45,7 +53,7 @@ export class PhoneMaskDirective implements OnInit {
         let resultArrCounter = resultArr.length - 1;
         let inputArrCounter = inputArr.length - 1;
         while (inputArrCounter >= 0) {
-            if (separators && separators.indexOf(resultArr[resultArrCounter]) < 0) {
+            if (separator && separator.indexOf(resultArr[resultArrCounter]) < 0) {
                 resultArr[resultArrCounter] = inputArr[inputArrCounter];
                 inputArrCounter--;
             }
@@ -61,5 +69,30 @@ export class PhoneMaskDirective implements OnInit {
         }
 
         return resultArr.join('');
+    }
+
+    validate (value: string, separatorChar: string) {
+        const scope = this;
+        if ( !value ) {
+            return true;
+        }
+
+        const pattern = this.appMask.split(separatorChar);
+
+        const splittedValue: number [] = value.toString().split(separatorChar)
+        .filter((v: string) => {
+            return !!v;
+        }).map ( (elem: string) => {
+            return parseInt(elem, 10);
+        });
+        splittedValue.forEach( (element, index) => {
+            if ( element > this.timeRange[pattern[index].toLowerCase()]) {
+                setTimeout(() => {
+                    scope.control.control.setErrors({'invalidTime': true});
+                });
+            } else {
+                scope.control.control.setErrors(null);
+            }
+        });
     }
 }
